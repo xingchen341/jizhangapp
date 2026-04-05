@@ -1,6 +1,6 @@
 import relationalStore from '@ohos.data.relationalStore';
 import common from '@ohos.app.ability.common';
-import { Bill, Budget, CategoryStat, MonthSummary } from '../model/BillModel';
+import { Bill, Budget, Category, CategoryStat, MonthSummary, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../model/BillModel';
 import { AppConstants } from '../utils/Constants';
 import { DateUtils } from '../utils/DateUtils';
 
@@ -39,6 +39,17 @@ const CREATE_BUDGETS_TABLE = `
   )
 `;
 
+const CREATE_CATEGORIES_TABLE = `
+  CREATE TABLE IF NOT EXISTS ${AppConstants.TABLE_CATEGORIES} (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    icon TEXT NOT NULL,
+    type TEXT NOT NULL,
+    color TEXT NOT NULL,
+    is_custom INTEGER NOT NULL DEFAULT 0
+  )
+`;
+
 export class DatabaseHelper {
   private static instance: DatabaseHelper;
   private rdbStore: relationalStore.RdbStore | null = null;
@@ -63,6 +74,8 @@ export class DatabaseHelper {
       this.rdbStore = await relationalStore.getRdbStore(context, STORE_CONFIG);
       await this.rdbStore.executeSql(CREATE_BILLS_TABLE);
       await this.rdbStore.executeSql(CREATE_BUDGETS_TABLE);
+      await this.rdbStore.executeSql(CREATE_CATEGORIES_TABLE);
+      await this.seedDefaultCategories();
       console.info(TAG, 'Database initialized successfully');
     } catch (err) {
       console.error(TAG, 'Failed to initialize database:', JSON.stringify(err));
@@ -238,6 +251,102 @@ export class DatabaseHelper {
     }
     results.reverse();
     return results;
+  }
+
+  // ============================
+  // 分类 CRUD
+  // ============================
+
+  /**
+   * 播种内置默认分类（首次初始化时调用）
+   */
+  private async seedDefaultCategories(): Promise<void> {
+    const store = this.getStore();
+    const allDefaults = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
+    for (const cat of allDefaults) {
+      await store.executeSql(
+        `INSERT OR IGNORE INTO ${AppConstants.TABLE_CATEGORIES} (id, name, icon, type, color, is_custom) VALUES (?, ?, ?, ?, ?, 0)`,
+        [cat.id, cat.name, cat.icon, cat.type, cat.color]
+      );
+    }
+  }
+
+  /**
+   * 查询指定类型的所有分类（内置 + 自定义）
+   */
+  async getCategoriesByType(type: string): Promise<Category[]> {
+    const store = this.getStore();
+    const predicates = new relationalStore.RdbPredicates(AppConstants.TABLE_CATEGORIES);
+    predicates.equalTo('type', type);
+    predicates.orderByAsc('id');
+    const cursor = await store.query(predicates);
+    return this.parseCategoryCursor(cursor);
+  }
+
+  /**
+   * 插入自定义分类，返回新行 ID
+   */
+  async insertCategory(category: Category): Promise<number> {
+    const store = this.getStore();
+    const values: relationalStore.ValuesBucket = {
+      'name': category.name,
+      'icon': category.icon,
+      'type': category.type,
+      'color': category.color,
+      'is_custom': 1
+    };
+    return await store.insert(AppConstants.TABLE_CATEGORIES, values);
+  }
+
+  /**
+   * 更新自定义分类（仅允许修改 is_custom=1 的行）
+   */
+  async updateCategory(category: Category): Promise<void> {
+    const store = this.getStore();
+    const values: relationalStore.ValuesBucket = {
+      'name': category.name,
+      'icon': category.icon,
+      'color': category.color
+    };
+    const predicates = new relationalStore.RdbPredicates(AppConstants.TABLE_CATEGORIES);
+    predicates.equalTo('id', category.id);
+    predicates.equalTo('is_custom', 1);
+    await store.update(values, predicates);
+  }
+
+  /**
+   * 删除自定义分类（仅允许删除 is_custom=1 的行）
+   */
+  async deleteCategory(id: number): Promise<void> {
+    const store = this.getStore();
+    const predicates = new relationalStore.RdbPredicates(AppConstants.TABLE_CATEGORIES);
+    predicates.equalTo('id', id);
+    predicates.equalTo('is_custom', 1);
+    await store.delete(predicates);
+  }
+
+  /**
+   * 解析游标为分类数组
+   */
+  private parseCategoryCursor(cursor: relationalStore.ResultSet): Category[] {
+    const categories: Category[] = [];
+    if (cursor.rowCount === 0) {
+      cursor.close();
+      return categories;
+    }
+    cursor.goToFirstRow();
+    do {
+      categories.push({
+        id: cursor.getLong(cursor.getColumnIndex('id')),
+        name: cursor.getString(cursor.getColumnIndex('name')),
+        icon: cursor.getString(cursor.getColumnIndex('icon')),
+        type: cursor.getString(cursor.getColumnIndex('type')) as 'expense' | 'income',
+        color: cursor.getString(cursor.getColumnIndex('color')),
+        isCustom: cursor.getLong(cursor.getColumnIndex('is_custom')) === 1
+      });
+    } while (cursor.goToNextRow());
+    cursor.close();
+    return categories;
   }
 
   /**

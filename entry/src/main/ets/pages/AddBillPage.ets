@@ -2,7 +2,7 @@ import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import picker from '@ohos.file.picker';
 import { DatabaseHelper } from '../database/DatabaseHelper';
-import { Bill, Category, EXPENSE_CATEGORIES, INCOME_CATEGORIES, getCategoryById } from '../model/BillModel';
+import { Bill, Category } from '../model/BillModel';
 import { AppConstants } from '../utils/Constants';
 import { DateUtils } from '../utils/DateUtils';
 
@@ -33,34 +33,43 @@ struct AddBillPage {
   @State selectedYear: number = new Date().getFullYear();
   @State selectedMonth: number = new Date().getMonth() + 1;
   @State selectedDay: number = new Date().getDate();
+  @State expenseCategories: Category[] = [];
+  @State incomeCategories: Category[] = [];
 
   private db: DatabaseHelper = DatabaseHelper.getInstance();
 
   aboutToAppear() {
     this.selectedDate = DateUtils.getTodayString();
-    const params = router.getParams() as RouteParams;
-    if (params) {
-      if (params.type === 'income') {
-        this.billType = 'income';
-        this.selectedCategoryId = 21;
+    this.loadCategories().then(() => {
+      const params = router.getParams() as RouteParams;
+      if (params) {
+        if (params.type === 'income') {
+          this.billType = 'income';
+          this.selectedCategoryId = this.incomeCategories.length > 0
+            ? this.incomeCategories[0].id
+            : AppConstants.DEFAULT_INCOME_CATEGORY_ID;
+        }
+        if (params.edit && params.billId) {
+          this.isEditMode = true;
+          this.editBillId = params.billId;
+          this.loadBillForEdit(params.billId);
+        }
+        if (params.autoAmount) {
+          this.amount = params.autoAmount.toString();
+        }
+        if (params.autoNote) {
+          this.note = params.autoNote;
+        }
+        if (params.ocr) {
+          this.launchOcr();
+        }
       }
-      if (params.edit && params.billId) {
-        this.isEditMode = true;
-        this.editBillId = params.billId;
-        this.loadBillForEdit(params.billId);
-      }
-      // 智能场景自动填充
-      if (params.autoAmount) {
-        this.amount = params.autoAmount.toString();
-      }
-      if (params.autoNote) {
-        this.note = params.autoNote;
-      }
-      // OCR 模式
-      if (params.ocr) {
-        this.launchOcr();
-      }
-    }
+    });
+  }
+
+  async loadCategories(): Promise<void> {
+    this.expenseCategories = await this.db.getCategoriesByType('expense');
+    this.incomeCategories = await this.db.getCategoriesByType('income');
   }
 
   async loadBillForEdit(id: number) {
@@ -76,11 +85,11 @@ struct AddBillPage {
   }
 
   getCurrentCategories(): Category[] {
-    return this.billType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+    return this.billType === 'expense' ? this.expenseCategories : this.incomeCategories;
   }
 
   getSelectedCategory(): Category | undefined {
-    return getCategoryById(this.selectedCategoryId);
+    return [...this.expenseCategories, ...this.incomeCategories].find(c => c.id === this.selectedCategoryId);
   }
 
   async saveBill() {
@@ -289,7 +298,9 @@ struct AddBillPage {
           .backgroundColor(this.billType === 'expense' ? 'rgba(255,255,255,0.25)' : 'transparent')
           .onClick(() => {
             this.billType = 'expense';
-            this.selectedCategoryId = 1;
+            this.selectedCategoryId = this.expenseCategories.length > 0
+              ? this.expenseCategories[0].id
+              : AppConstants.DEFAULT_EXPENSE_CATEGORY_ID;
           })
         Text('收入')
           .fontSize(15)
@@ -300,7 +311,9 @@ struct AddBillPage {
           .backgroundColor(this.billType === 'income' ? 'rgba(255,255,255,0.25)' : 'transparent')
           .onClick(() => {
             this.billType = 'income';
-            this.selectedCategoryId = 21;
+            this.selectedCategoryId = this.incomeCategories.length > 0
+              ? this.incomeCategories[0].id
+              : AppConstants.DEFAULT_INCOME_CATEGORY_ID;
           })
       }
       .padding({ top: 8, bottom: 16 })

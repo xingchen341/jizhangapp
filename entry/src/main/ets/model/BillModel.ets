@@ -42,6 +42,7 @@ export interface Category {
   icon: string;
   type: BillType;
   color: string;
+  isCustom?: boolean;
 }
 
 /**

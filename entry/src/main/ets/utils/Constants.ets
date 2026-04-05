@@ -19,6 +19,7 @@ export class AppConstants {
   static readonly DB_NAME: string = 'jizhang.db';
   static readonly TABLE_BILLS: string = 'bills';
   static readonly TABLE_BUDGETS: string = 'budgets';
+  static readonly TABLE_CATEGORIES: string = 'categories';
 
   // 路由页面
   static readonly PAGE_INDEX: string = 'pages/Index';
@@ -27,6 +28,7 @@ export class AppConstants {
   static readonly PAGE_STATISTICS: string = 'pages/StatisticsPage';
   static readonly PAGE_BUDGET: string = 'pages/BudgetPage';
   static readonly PAGE_SETTINGS: string = 'pages/SettingsPage';
+  static readonly PAGE_CATEGORY_MANAGE: string = 'pages/CategoryManagePage';
 
   // AppStorage Keys
   static readonly STORAGE_CURRENT_MONTH: string = 'currentMonth';
@@ -43,6 +45,10 @@ export class AppConstants {
 
   // 货币符号
   static readonly CURRENCIES: string[] = ['¥', '$', '€', '£', '₩'];
+
+  // 默认分类 ID（用于新建账单时的初始选中项）
+  static readonly DEFAULT_EXPENSE_CATEGORY_ID: number = 1;
+  static readonly DEFAULT_INCOME_CATEGORY_ID: number = 21;
 
   // 快捷分类 (主页快速添加用)
   static readonly QUICK_EXPENSE_IDS: number[] = [1, 2, 3, 4, 5, 6];
