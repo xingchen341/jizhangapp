@@ -1,7 +1,7 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { DatabaseHelper } from '../database/DatabaseHelper';
-import { Budget, Category, EXPENSE_CATEGORIES } from '../model/BillModel';
+import { Budget, Category } from '../model/BillModel';
 import { AppConstants } from '../utils/Constants';
 import { DateUtils } from '../utils/DateUtils';
 
@@ -19,13 +19,17 @@ struct BudgetPage {
   @State editingId: number = 0;
   @State selectedCategoryId: number = 1;
   @State budgetAmount: string = '';
+  @State expenseCategories: Category[] = [];
 
   private db: DatabaseHelper = DatabaseHelper.getInstance();
 
   aboutToAppear() {
     const params = router.getParams() as RouteParams;
     this.month = (params && params.month) ? params.month : DateUtils.getCurrentMonth();
-    this.loadBudgets();
+    this.db.getCategoriesByType('expense').then(cats => {
+      this.expenseCategories = cats;
+      this.loadBudgets();
+    });
   }
 
   async loadBudgets() {
@@ -49,7 +53,7 @@ struct BudgetPage {
 
   getUnbudgetedCategories(): Category[] {
     const budgetedIds = new Set(this.budgets.map(b => b.categoryId));
-    return EXPENSE_CATEGORIES.filter(c => !budgetedIds.has(c.id));
+    return this.expenseCategories.filter(c => !budgetedIds.has(c.id));
   }
 
   openAddPanel(catId: number = 0) {
@@ -77,7 +81,7 @@ struct BudgetPage {
       promptAction.showToast({ message: '请输入有效预算金额' });
       return;
     }
-    const cat = EXPENSE_CATEGORIES.find(c => c.id === this.selectedCategoryId);
+    const cat = this.expenseCategories.find(c => c.id === this.selectedCategoryId);
     if (!cat) {
       promptAction.showToast({ message: '请选择分类' });
       return;
@@ -420,7 +424,7 @@ struct BudgetPage {
         }
       } else {
         // 编辑时显示当前分类
-        const cat = EXPENSE_CATEGORIES.find(c => c.id === this.selectedCategoryId);
+        const cat = this.expenseCategories.find(c => c.id === this.selectedCategoryId);
         if (cat) {
           Row({ space: 10 }) {
             Text(cat.icon).fontSize(28)
@@ -509,7 +513,7 @@ struct BudgetPage {
   }
 
   getCategoryColor(catId: number): string {
-    const cat = EXPENSE_CATEGORIES.find(c => c.id === catId);
+    const cat = this.expenseCategories.find(c => c.id === catId);
     return cat ? cat.color : AppConstants.COLOR_PRIMARY;
   }
 }

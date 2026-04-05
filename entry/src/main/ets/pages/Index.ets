@@ -875,6 +875,29 @@ struct SettingsPageContent {
           .backgroundColor(AppConstants.COLOR_CARD)
           .borderRadius(12)
 
+          // 分类管理
+          Column() {
+            Text('分类管理')
+              .fontSize(13)
+              .fontColor(AppConstants.COLOR_TEXT_SECONDARY)
+              .alignSelf(ItemAlign.Start)
+              .margin({ bottom: 8 })
+
+            SettingItem({
+              icon: '🏷️',
+              title: '管理分类',
+              subtitle: '添加或删除自定义收入/支出分类',
+              hasSwitch: false,
+              switchValue: false,
+              onChange: () => {
+                router.pushUrl({ url: AppConstants.PAGE_CATEGORY_MANAGE });
+              }
+            })
+          }
+          .padding(16)
+          .backgroundColor(AppConstants.COLOR_CARD)
+          .borderRadius(12)
+
           // 数据管理
           Column() {
             Text('数据管理')
