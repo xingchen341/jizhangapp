@@ -1,0 +1,12 @@
+{
+  "name": "jizhangapp",
+  "version": "1.0.0",
+  "description": "鸿蒙智能记账应用",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {},
+  "devDependencies": {
+    "@ohos/hvigor-ohos-plugin": "3.1.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "string": [
+    { "name": "module_desc", "value": "智能记账应用" },
+    { "name": "EntryAbility_desc", "value": "智能记账" },
+    { "name": "EntryAbility_label", "value": "智能记账" },
+    { "name": "permission_read_media", "value": "读取相册，用于识别账单图片" },
+    { "name": "permission_write_media", "value": "保存图片，用于记录账单凭证" },
+    { "name": "permission_camera", "value": "使用相机拍摄账单凭证" },
+    { "name": "permission_notification", "value": "读取通知，用于自动识别支付信息" },
+    { "name": "shortcut_expense", "value": "快速记支出" },
+    { "name": "shortcut_income", "value": "快速记收入" }
+  ]
+}
